@@ -71,11 +71,19 @@ def _categories() -> int:
 
 
 def _hash_str(info_hashes: Any) -> str:
-    """Stable string key for a torrent, preferring the v2 hash when present."""
+    """Stable string key for a torrent.
+
+    v1 is preferred deliberately. A hybrid torrent added from a v1 magnet has
+    no v2 hash until its metadata arrives, so keying on v2-when-present would
+    silently change the key mid-flight — orphaning the record we created at add
+    time and breaking every subsequent status update for it. v1 is present from
+    the first moment for anything that has one; v2-only torrents fall through
+    to their v2 hash, which is equally stable for them.
+    """
     try:
-        if info_hashes.has_v2():
-            return str(info_hashes.v2)
-        return str(info_hashes.v1)
+        if info_hashes.has_v1():
+            return str(info_hashes.v1)
+        return str(info_hashes.v2)
     except AttributeError:
         return str(info_hashes)
 
@@ -151,7 +159,7 @@ class TorrentMeta:
 class Record:
     """Everything we track for one torrent."""
 
-    __slots__ = ("handle", "status", "meta", "down_hist", "up_hist", "last_seen", "pending_delete")
+    __slots__ = ("handle", "status", "meta", "down_hist", "up_hist", "last_seen")
 
     def __init__(self, handle: lt.torrent_handle, meta: TorrentMeta):
         self.handle = handle
@@ -160,7 +168,6 @@ class Record:
         self.down_hist: deque[int] = deque(maxlen=HISTORY_LEN)
         self.up_hist: deque[int] = deque(maxlen=HISTORY_LEN)
         self.last_seen = time.time()
-        self.pending_delete = False
 
 
 class Engine:
@@ -170,6 +177,9 @@ class Engine:
         self.config = config
         self.session: lt.session | None = None
         self.torrents: dict[str, Record] = {}
+        # Info hashes whose removal we have already applied locally and are
+        # waiting on libtorrent to confirm.
+        self._removing: set[str] = set()
         self.meta: dict[str, TorrentMeta] = {}
         self.global_down: deque[int] = deque(maxlen=HISTORY_LEN)
         self.global_up: deque[int] = deque(maxlen=HISTORY_LEN)
@@ -544,6 +554,13 @@ class Engine:
 
     def _on_torrent_removed_alert(self, alert) -> None:
         ih = _hash_str(alert.info_hashes)
+        if ih in self._removing:
+            # We already dropped this record synchronously in remove(); this
+            # alert is only the confirmation. Touching self.torrents here would
+            # delete a record the user has since re-created by adding the same
+            # info hash again, making the new torrent vanish from the UI.
+            self._removing.discard(ih)
+            return
         rec = self.torrents.pop(ih, None)
         self._forget_files(ih)
         if rec is not None:
@@ -916,13 +933,15 @@ class Engine:
             rec = self.torrents.get(ih)
             if rec is None:
                 continue
-            rec.pending_delete = True
+            name = rec.status.name if rec.status else ih[:12]
+            self._removing.add(ih)
             with contextlib.suppress(Exception):
                 self.session.remove_torrent(rec.handle, option)
             # Drop it from our map immediately so the UI reacts without waiting
             # for the removal alert to come back.
             self.torrents.pop(ih, None)
             self._forget_files(ih)
+            self.emit("removed", {"hash": ih, "name": name})
             count += 1
         return count
 

@@ -61,12 +61,20 @@ export function modal({ title, body, footer, wide = false, cls = '', onMount, on
      </div>`;
 
   const el = root.firstElementChild;
+  // Remember where focus came from: without this the keyboard is left inside a
+  // detached input, and global shortcuts silently stop working.
+  const returnFocus = document.activeElement;
   const close = () => {
     if (closeModal !== close) return;
     closeModal = null;
     root.hidden = true;
     root.innerHTML = '';
     document.removeEventListener('keydown', onKey, true);
+    if (returnFocus && returnFocus.isConnected && returnFocus !== document.body) {
+      try { returnFocus.focus(); } catch { /* element may be gone */ }
+    } else if (document.activeElement && document.activeElement.blur) {
+      document.activeElement.blur();
+    }
     if (onClose) onClose();
   };
   const onKey = (event) => {

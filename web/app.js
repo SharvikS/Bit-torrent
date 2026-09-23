@@ -1732,11 +1732,17 @@ function openPalette() {
     if (active && active.scrollIntoView) active.scrollIntoView({ block: 'nearest' });
   };
 
+  const returnFocus = document.activeElement;
   const close = () => {
     root.hidden = true;
     input.value = '';
     document.removeEventListener('keydown', onKey, true);
     root.removeEventListener('mousedown', onDown);
+    // Hand the keyboard back, or global shortcuts stay trapped in this input.
+    input.blur();
+    if (returnFocus && returnFocus.isConnected && returnFocus !== input) {
+      try { returnFocus.focus(); } catch { /* element may be gone */ }
+    }
   };
   const choose = (index) => {
     const command = filtered[index];
