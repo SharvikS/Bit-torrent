@@ -237,7 +237,7 @@ function startApp() {
   $('#app').hidden = false;
   buildStatusFilters();
   buildTableHead();
-  renderSkeleton();
+  scheduleSkeleton();
   wireChrome();
   wireKeyboard();
   wireDragDrop();
@@ -279,10 +279,26 @@ function onLiveStatus(status) {
   $('#app').classList.toggle('stale', status === 'closed');
 }
 
+let skeletonTimer = null;
+
+/**
+ * Arm the loading state.
+ *
+ * On a local daemon the first snapshot lands in ~10ms, and placeholders that
+ * appear and vanish inside a single frame read as a glitch rather than as
+ * feedback. So the skeleton is only drawn if the data is actually late —
+ * which is the case that needed it in the first place (a remote instance, a
+ * slow link, a daemon still loading a few thousand resume files).
+ */
+function scheduleSkeleton() {
+  clearTimeout(skeletonTimer);
+  skeletonTimer = setTimeout(renderSkeleton, 160);
+}
+
 /** Placeholder rows for the gap between first paint and first snapshot. */
 function renderSkeleton() {
   const root = $('#skeleton');
-  if (!root) return;
+  if (!root || root.hidden) return;
   const widths = [[42, 9, 16, 12, 10], [30, 7, 20, 9, 14], [50, 11, 13, 15, 8],
                   [36, 8, 18, 11, 12], [45, 10, 15, 13, 9], [28, 9, 22, 10, 11]];
   root.innerHTML = widths.map((row) =>
@@ -292,6 +308,7 @@ function renderSkeleton() {
 }
 
 function clearSkeleton() {
+  clearTimeout(skeletonTimer);
   const root = $('#skeleton');
   if (!root || root.hidden) return;
   root.hidden = true;
