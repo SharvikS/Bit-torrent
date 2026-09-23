@@ -25,6 +25,7 @@ import logging
 import os
 import time
 from collections import deque
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
@@ -77,6 +78,30 @@ def _hash_str(info_hashes: Any) -> str:
         return str(info_hashes.v1)
     except AttributeError:
         return str(info_hashes)
+
+
+def _secs(value: Any) -> int:
+    """libtorrent hands back ``timedelta`` for durations; JSON wants seconds."""
+    if value is None:
+        return 0
+    if isinstance(value, timedelta):
+        return int(value.total_seconds())
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _epoch(value: Any) -> int:
+    """Normalise a libtorrent timestamp, which may be None or a datetime."""
+    if value is None:
+        return 0
+    if isinstance(value, datetime):
+        return int(value.timestamp())
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
 
 
 def _flag(flags: int, name: str) -> bool:
@@ -267,8 +292,13 @@ class Engine:
             "active_limit": int(cfg["active_limit"]),
             "dont_count_slow_torrents": bool(cfg["dont_count_slow_torrents"]),
             "auto_manage_interval": 15,
-            "seed_time_limit": int(cfg["seed_time_limit"]) * 60 if cfg["seed_time_limit"] else 0,
-            "share_ratio_limit": float(cfg["share_ratio_limit"]) or 0.0,
+            # libtorrent expresses both limits as integers, and the ratio as
+            # percent. A zero from our config means "no limit", but zero means
+            # "stop immediately" to libtorrent — so we hand it an effectively
+            # infinite value and enforce the real limit ourselves in
+            # _enforce_share_limits, which also supports remove-on-limit.
+            "seed_time_limit": int(cfg["seed_time_limit"]) * 60 if cfg["seed_time_limit"] else 0x7FFFFFFF,
+            "share_ratio_limit": int(float(cfg["share_ratio_limit"]) * 100) or 0x7FFFFFFF,
 
             # Throughput tuning. These are the knobs that separate a snappy
             # client from a sluggish one on a fast link.
@@ -1224,7 +1254,7 @@ class Engine:
             downloaded = st.all_time_download or st.total_done or 0
             ratio = (st.all_time_upload / downloaded) if downloaded else 0.0
             hit = (ratio_limit > 0 and ratio >= ratio_limit) or \
-                  (time_limit > 0 and st.seeding_duration >= time_limit)
+                  (time_limit > 0 and _secs(st.seeding_duration) >= time_limit)
             if not hit:
                 continue
             name = st.name
@@ -1335,11 +1365,11 @@ class Engine:
             "availability": round(st.distributed_copies, 3) if st.distributed_copies >= 0 else 0.0,
             "queue_position": st.queue_position,
             "save_path": st.save_path,
-            "added_on": rec.meta.added_on or st.added_time,
-            "completed_on": st.completed_time or 0,
-            "active_time": st.active_duration,
-            "seeding_time": st.seeding_duration,
-            "last_activity": max(st.last_download, st.last_upload),
+            "added_on": rec.meta.added_on or _epoch(st.added_time),
+            "completed_on": _epoch(st.completed_time),
+            "active_time": _secs(st.active_duration),
+            "seeding_time": _secs(st.seeding_duration),
+            "last_activity": max(_epoch(st.last_download), _epoch(st.last_upload)),
             "category": rec.meta.category,
             "tags": rec.meta.tags,
             "tracker": st.current_tracker,
@@ -1372,7 +1402,7 @@ class Engine:
             "source": rec.meta.source,
             "comment": (ti.comment() if ti else ""),
             "created_by": (ti.creator() if ti else ""),
-            "creation_date": (ti.creation_date() if ti else 0),
+            "creation_date": _epoch(ti.creation_date() if ti else 0),
             "private": (ti.priv() if ti else False),
             "num_files": (ti.num_files() if ti else 0),
             "piece_length": (ti.piece_length() if ti else 0),
@@ -1413,11 +1443,24 @@ class Engine:
         down = self.global_down[-1] if self.global_down else 0
         up = self.global_up[-1] if self.global_up else 0
 
-        counts = {
-            "all": len(self.torrents), "downloading": 0, "seeding": 0,
-            "paused": 0, "queued": 0, "checking": 0, "error": 0,
-            "finished": 0, "active": 0, "inactive": 0, "stalled": 0,
+        # Sidebar filter counts. A torrent belongs to exactly one *state*
+        # bucket but may also belong to the overlapping "finished" and
+        # "active" buckets, so those are computed separately.
+        counts = {k: 0 for k in ("all", "downloading", "seeding", "paused", "queued",
+                                 "checking", "error", "stalled", "finished",
+                                 "active", "inactive")}
+        counts["all"] = len(self.torrents)
+        buckets = {
+            "downloading": ("downloading", "metadata"),
+            "stalled": ("stalled",),
+            "seeding": ("seeding",),
+            "paused": ("paused", "paused_seed"),
+            "queued": ("queued", "queued_seed"),
+            "checking": ("checking",),
+            "error": ("error",),
         }
+        done_states = ("seeding", "finished", "paused_seed", "queued_seed")
+
         session_down = session_up = 0
         for rec in self.torrents.values():
             st = rec.status
@@ -1426,16 +1469,11 @@ class Engine:
             session_down += st.total_download
             session_up += st.total_upload
             state = self._derive_state(st)
-            if state in counts:
-                counts[state] += 1
-            if state in ("queued_seed",):
-                counts["queued"] += 1
-            if state in ("paused_seed",):
-                counts["paused"] += 1
-            if state in ("seeding", "finished", "paused_seed", "queued_seed"):
+            for bucket, members in buckets.items():
+                if state in members:
+                    counts[bucket] += 1
+            if state in done_states:
                 counts["finished"] += 1
-            if state == "seeding":
-                counts["seeding"] += 1
             if st.download_payload_rate or st.upload_payload_rate:
                 counts["active"] += 1
             else:
