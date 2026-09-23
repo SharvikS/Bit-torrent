@@ -44,12 +44,12 @@ let closeModal = null;
  * Open a modal.
  * @returns {{close:Function, el:HTMLElement}}
  */
-export function modal({ title, body, footer, wide = false, onMount, onClose }) {
+export function modal({ title, body, footer, wide = false, cls = '', onMount, onClose }) {
   closeActiveModal();
   const root = modalRoot();
   root.hidden = false;
   root.innerHTML =
-    `<div class="modal${wide ? ' wide' : ''}" role="dialog" aria-modal="true">
+    `<div class="modal${wide ? ' wide' : ''}${cls ? ' ' + cls : ''}" role="dialog" aria-modal="true">
        <div class="modal-head">
          <h2>${esc(title)}</h2>
          <button class="btn icon ghost" data-close aria-label="Close">

@@ -1357,8 +1357,8 @@ class Engine:
             "uploaded": st.all_time_upload,
             "ratio": ratio,
             "eta": eta,
-            "peers": st.num_peers - st.num_seeds,
-            "peers_total": st.list_peers - st.list_seeds,
+            "peers": max(0, st.num_peers - st.num_seeds),
+            "peers_total": max(0, st.list_peers - st.list_seeds),
             "seeds": st.num_seeds,
             "seeds_total": max(st.num_complete, st.list_seeds),
             "connections": st.num_connections,
@@ -1376,8 +1376,9 @@ class Engine:
             "has_metadata": st.has_metadata,
             "pieces_have": st.num_pieces,
             "error": st.errc.message() if st.errc.value() else "",
-            "dl_limit": rec.handle.download_limit() if rec.handle.is_valid() else 0,
-            "up_limit": rec.handle.upload_limit() if rec.handle.is_valid() else 0,
+            # libtorrent reports -1 for "no limit"; the UI treats 0 as unlimited.
+            "dl_limit": max(0, rec.handle.download_limit()) if rec.handle.is_valid() else 0,
+            "up_limit": max(0, rec.handle.upload_limit()) if rec.handle.is_valid() else 0,
             "sequential": _flag(st.flags, "sequential_download"),
             "auto_managed": _flag(st.flags, "auto_managed"),
             "super_seeding": _flag(st.flags, "super_seeding"),
@@ -1391,9 +1392,12 @@ class Engine:
         base = self.torrent_dict(ih, rec)
         st = rec.status
         ti = rec.handle.torrent_file()
+        # NOTE: `peers` in the base payload is a *count*. The peer list goes in
+        # `peer_list` so it cannot clobber it — the two are different shapes and
+        # the table and the detail panel each need one of them.
         base.update({
             "files": self.files(ih),
-            "peers": self.peers(ih),
+            "peer_list": self.peers(ih),
             "trackers": self.trackers(ih),
             "pieces": self.pieces(ih),
             "down_history": list(rec.down_hist)[-120:],

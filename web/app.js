@@ -391,7 +391,7 @@ function buildTableHead() {
   $('#head-row').innerHTML = cols.map((c) => {
     const sorted = state.sort.key === c.key;
     const arrow = state.sort.dir > 0 ? '▲' : '▼';
-    return `<th data-key="${c.key}" class="${c.num ? 'num' : ''}${sorted ? ' sorted' : ''}${c.optional ? ' col-optional' : ''}"
+    return `<th data-key="${c.key}" class="col-${c.key}${c.num ? ' num' : ''}${sorted ? ' sorted' : ''}"
              ${c.width ? `style="width:${c.width}px"` : ''}>
              ${F.esc(c.label)}<span class="sort">${arrow}</span></th>`;
   }).join('');
@@ -432,9 +432,15 @@ function buildTableHead() {
 
 const rowCache = new Map();   // hash -> <tr>
 
+let lastColumnSignature = '';
+
 function renderTable(force = false) {
   const tbody = $('#rows');
   const cols = visibleColumns();
+  // Cell classes are written once at row creation, so a column change has to
+  // invalidate the cache rather than try to patch existing rows.
+  const signature = cols.map((c) => c.key).join(',');
+  if (signature !== lastColumnSignature) { lastColumnSignature = signature; force = true; }
   const list = visibleTorrents();
 
   $('#empty').hidden = list.length > 0 || state.torrents.size > 0;
@@ -462,7 +468,7 @@ function renderTable(force = false) {
       tr = document.createElement('tr');
       tr.dataset.hash = t.hash;
       tr.innerHTML = cols.map((c) =>
-        `<td class="${c.num ? 'num ' : ''}${c.key === 'name' ? 'name ' : ''}${c.optional ? 'col-optional' : ''}"></td>`).join('');
+        `<td class="col-${c.key}${c.num ? ' num' : ''}${c.key === 'name' ? ' name' : ''}"></td>`).join('');
       rowCache.set(t.hash, tr);
     }
     const cells = tr.children;
@@ -867,7 +873,8 @@ async function setPriorities(hash, priorities) {
 /* ── peers ── */
 
 function detailPeers(root, t) {
-  if (!t.peers.length) {
+  const peers = t.peer_list || [];
+  if (!peers.length) {
     root.innerHTML = '<div class="palette-empty">No peers connected right now.</div>';
     return;
   }
@@ -877,7 +884,7 @@ function detailPeers(root, t) {
         <th style="width:34%">Address</th><th style="width:26%">Client</th>
         <th class="num">Prog</th><th class="num">Down</th><th class="num">Up</th><th style="width:40px">Flags</th>
       </tr></thead>
-      <tbody>${t.peers.map((p) => {
+      <tbody>${peers.map((p) => {
         const flags = [
           p.seed ? 'S' : '', p.encrypted ? 'E' : '', p.utp ? 'μ' : '',
           p.incoming ? 'I' : '', p.snubbed ? 'N' : '',
@@ -1575,6 +1582,7 @@ async function settingsDialog() {
   modal({
     title: 'Settings',
     wide: true,
+    cls: 'settings',
     body: `<div class="set-rail">${SETTINGS_PANES.map((p, i) =>
               `<button class="filter${i === 0 ? ' on' : ''}" data-pane="${p.id}"><span class="label">${p.label}</span></button>`).join('')}</div>
            <div>${SETTINGS_PANES.map((p, i) =>

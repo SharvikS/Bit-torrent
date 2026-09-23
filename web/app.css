@@ -77,6 +77,12 @@
 
 * { box-sizing: border-box; }
 
+/* The `hidden` attribute is how this app toggles overlays, panels and the
+   empty state. A UA rule sets `[hidden]{display:none}` at near-zero
+   specificity, so any author rule that sets `display` on the same element
+   silently defeats it — which is every panel below. Assert it once here. */
+[hidden] { display: none !important; }
+
 html, body {
   height: 100%;
   margin: 0;
@@ -138,7 +144,12 @@ kbd {
 .body {
   display: grid;
   grid-template-columns: 228px minmax(0, 1fr);
+  /* The implicit row defaults to `auto`, which sizes to the tallest child —
+     letting a long detail panel push the whole region past the status bar.
+     Pinning it to minmax(0,1fr) makes the children scroll instead of grow. */
+  grid-template-rows: minmax(0, 1fr);
   min-height: 0;
+  overflow: hidden;
   background: var(--bg);
 }
 .body.with-detail { grid-template-columns: 228px minmax(0, 1fr) clamp(360px, 32vw, 460px); }
@@ -193,7 +204,7 @@ kbd {
 
 .rates { display: flex; align-items: center; gap: 9px; }
 #spark {
-  width: 150px; height: 34px;
+  width: 150px; height: 34px; flex: none;
   border-radius: var(--radius-sm);
   background: var(--surface);
   border: 1px solid var(--border);
@@ -255,6 +266,7 @@ kbd {
 
 .sidebar {
   display: flex; flex-direction: column;
+  min-height: 0;
   gap: 4px;
   padding: 10px 8px 0;
   background: var(--bg-2);
@@ -304,7 +316,21 @@ kbd {
 
 /* ══════════════════════════ main / toolbar ══════════════════════════ */
 
-.main { display: grid; grid-template-rows: 42px minmax(0, 1fr); min-width: 0; }
+.main {
+  display: grid;
+  grid-template-rows: 42px minmax(0, 1fr);
+  min-width: 0;
+  container-type: inline-size;
+  container-name: main;
+}
+
+/* Drop columns least-useful-first as the table narrows. */
+@container main (max-width: 1150px) { .name-cell .chip { display: none; } }
+@container main (max-width: 1100px) { .col-added_on, .col-queue_position, .col-category { display: none; } }
+@container main (max-width: 1000px) { .col-eta, .col-ratio { display: none; } }
+@container main (max-width: 850px)  { .col-seeds, .col-peers { display: none; } }
+@container main (max-width: 650px)  { .col-size, .col-upspeed { display: none; } }
+@container main (max-width: 500px)  { .col-state { display: none; } }
 
 .toolbar {
   display: flex; align-items: center; gap: 4px;
@@ -370,9 +396,11 @@ table.torrents {
 
 .name-cell { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .name-cell .state-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
-.name-cell .txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.name-cell .txt { flex: 1 1 auto; min-width: 3ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .name-cell .chip {
   flex: none;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 14ch;
   font-size: 10px; font-weight: 600;
   padding: 1px 6px; border-radius: 20px;
   background: var(--surface-3); color: var(--muted);
@@ -445,6 +473,7 @@ table.torrents {
 .detail {
   display: grid;
   grid-template-rows: 44px 34px minmax(0, 1fr);
+  min-height: 0;
   border-left: 1px solid var(--border);
   background: var(--bg-2);
   min-width: 0;
@@ -531,12 +560,14 @@ table.torrents {
 .file-row { display: flex; align-items: center; gap: 8px; padding: 5px 4px; border-radius: var(--radius-sm); }
 .file-row:hover { background: var(--surface); }
 .file-row input[type="checkbox"] { width: 14px; height: 14px; flex: none; cursor: pointer; }
-.file-row .fname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.file-row .fname { flex: 1 1 auto; min-width: 3ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
 .file-row.skip .fname { color: var(--dim); text-decoration: line-through; }
 .file-row .fbar { width: 64px; flex: none; }
 .file-row .fsize { width: 62px; text-align: right; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; flex: none; }
 .file-row select {
-  height: 22px; font-size: 11px; padding: 0 4px;
+  width: auto; flex: none;
+  height: 22px; font-size: 11px; padding: 0 22px 0 6px;
+  background-position: calc(100% - 12px) 9px, calc(100% - 8px) 9px;
   background: var(--surface-2); color: var(--text-2);
   border: 1px solid var(--border); border-radius: 5px; cursor: pointer;
 }
@@ -618,6 +649,12 @@ table.torrents {
 .modal.settings .modal-body { display: grid; grid-template-columns: 148px minmax(0, 1fr); gap: 16px; padding: 0; }
 .set-rail { border-right: 1px solid var(--border); padding: 12px 8px; display: flex; flex-direction: column; gap: 1px; }
 .set-pane { padding: 14px 16px 18px; min-width: 0; }
+/* Short values read badly in a 700px-wide box; cap them at a comfortable
+   measure while leaving multi-line fields (tracker lists) full width. */
+.set-pane .field > input,
+.set-pane .field > select,
+.set-pane .field .inline { max-width: 430px; }
+.set-pane .check { max-width: 560px; }
 .set-pane[hidden] { display: none; }
 
 /* ══════════════════════════ form controls ══════════════════════════ */
@@ -661,8 +698,9 @@ select { cursor: pointer; appearance: none; padding-right: 26px;
 
 .check { display: flex; align-items: flex-start; gap: 9px; padding: 5px 0; cursor: pointer; }
 .check input { width: 15px; height: 15px; margin: 2px 0 0; flex: none; cursor: pointer; }
-.check .ctext { font-size: 12.5px; }
-.check .chint { font-size: 11px; color: var(--dim); margin-top: 1px; }
+.check > span { min-width: 0; }
+.check .ctext { display: block; font-size: 12.5px; }
+.check .chint { display: block; font-size: 11px; color: var(--dim); margin-top: 2px; line-height: 1.45; }
 
 .seg { display: inline-flex; padding: 2px; gap: 2px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); }
 .seg button {
@@ -829,6 +867,10 @@ select { cursor: pointer; appearance: none; padding-right: 26px;
   .rates { display: none; }
   .brand-name { display: none; }
 }
+@media (max-width: 760px) {
+  .statusbar { gap: 8px; overflow: hidden; }
+  #stat-version, #stat-session, #stat-dht, .statusbar .sep { display: none; }
+}
 @media (max-width: 720px) {
   .body, .body.with-detail { grid-template-columns: minmax(0, 1fr); }
   .sidebar { position: fixed; left: 0; top: 52px; bottom: 26px; z-index: 45; width: 228px;
@@ -836,5 +878,4 @@ select { cursor: pointer; appearance: none; padding-right: 26px;
   .sidebar.open { transform: none; }
   .search { width: auto; flex: 1; }
   .search kbd { display: none; }
-  .col-optional { display: none !important; }
 }
