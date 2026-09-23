@@ -1,0 +1,355 @@
+/* ══════════════════════════════════════════════════════════════════════
+   Fission — design tokens
+
+   Three independent axes, each switchable at runtime without a reload:
+
+     data-theme    the neutral ramp + surface elevation (7 themes)
+     data-accent   the single brand hue (7 accents)
+     data-density  vertical rhythm and type scale (3 levels)
+
+   Components never hard-code a colour, duration or size. They consume the
+   tokens below, which is what makes a new theme a ~25-line addition rather
+   than an audit of every rule in the stylesheet.
+   ══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── type scale ─────────────────────────────────────────────────────
+     One ratio, applied everywhere. Density shifts the whole scale rather
+     than letting each component pick its own size. */
+  --fs-2xs: 10px;
+  --fs-xs:  11px;
+  --fs-sm:  11.5px;
+  --fs-md:  12.5px;
+  --fs-lg:  13px;
+  --fs-xl:  14px;
+  --fs-2xl: 17px;
+
+  /* ── rhythm ─────────────────────────────────────────────────────── */
+  --row-h:      40px;
+  --ctl-h:      31px;
+  --topbar-h:   52px;
+  --toolbar-h:  42px;
+  --status-h:   26px;
+  --side-w:     228px;
+  --gap:        8px;
+
+  /* ── shape ──────────────────────────────────────────────────────── */
+  --radius:     9px;
+  --radius-sm:  6px;
+  --radius-lg:  14px;
+  --radius-pill: 999px;
+
+  /* ── motion ─────────────────────────────────────────────────────────
+     Durations are deliberately short. Anything above ~250ms on a control
+     that updates once a second reads as lag, not polish. */
+  --dur-instant: 70ms;
+  --dur-fast:    120ms;
+  --dur-base:    180ms;
+  --dur-slow:    260ms;
+  --dur-panel:   320ms;
+
+  /* Expo-out: moves decisively, settles gently. The house easing. */
+  --ease-out:    cubic-bezier(.16, 1, .3, 1);
+  --ease-in-out: cubic-bezier(.65, 0, .35, 1);
+  --ease-spring: cubic-bezier(.34, 1.4, .64, 1);
+
+  /* Every animated property routes through these so `reduced motion`
+     can zero them all out in one place. */
+  --t-color:  color var(--dur-fast) var(--ease-out),
+              background-color var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out);
+  --t-transform: transform var(--dur-base) var(--ease-out);
+  --t-panel:  var(--dur-panel) var(--ease-out);
+
+  /* ── semantic state hues ────────────────────────────────────────────
+     Constant across themes: a green row means "seeding" everywhere. */
+  --s-download: #3b82f6;
+  --s-seed:     #22c55e;
+  --s-pause:    #6b7280;
+  --s-queue:    #a855f7;
+  --s-check:    #f59e0b;
+  --s-error:    #ef4444;
+  --s-stall:    #64748b;
+  --s-meta:     #06b6d4;
+
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+          "Liberation Mono", monospace;
+}
+
+/* ══════════════════════════ dark themes ══════════════════════════ */
+
+/* Midnight — the default. Cool near-black with a blue undertone. */
+:root, :root[data-theme="midnight"] {
+  color-scheme: dark;
+  --bg:        #0a0b0f;
+  --bg-2:      #0e1015;
+  --surface:   #14161d;
+  --surface-2: #191c25;
+  --surface-3: #21252f;
+  --border:    #23262f;
+  --border-2:  #2d313c;
+  --text:      #e9ebf0;
+  --text-2:    #a7adbd;
+  --muted:     #767e91;
+  --dim:       #545b6b;
+  --shadow:    0 1px 2px rgb(0 0 0 / .28), 0 8px 28px -6px rgb(0 0 0 / .5);
+  --shadow-lg: 0 24px 70px -12px rgb(0 0 0 / .65), 0 2px 8px rgb(0 0 0 / .35);
+  /* Overlay scrim. Dark themes can take a heavy black; light themes would
+     look bruised by it, so each family sets its own. */
+  --scrim:     rgb(0 0 0 / .55);
+  --scrim-soft: rgb(0 0 0 / .5);
+  /* Inputs sit *below* the surface on dark themes and *on* it for light
+     ones, where a recessed grey field looks dirty next to white cards. */
+  --field-bg:  var(--bg);
+}
+
+/* Graphite — neutral, warmer, lower contrast. Easy for long sessions. */
+:root[data-theme="graphite"] {
+  color-scheme: dark;
+  --bg:        #141414;
+  --bg-2:      #191919;
+  --surface:   #1f1f1f;
+  --surface-2: #262626;
+  --surface-3: #303030;
+  --border:    #2e2e2e;
+  --border-2:  #3b3b3b;
+  --text:      #ededed;
+  --text-2:    #ababab;
+  --muted:     #808080;
+  --dim:       #5e5e5e;
+  --shadow:    0 1px 2px rgb(0 0 0 / .3), 0 8px 28px -6px rgb(0 0 0 / .45);
+  --shadow-lg: 0 24px 70px -12px rgb(0 0 0 / .6), 0 2px 8px rgb(0 0 0 / .3);
+}
+
+/* Carbon — true black. Saves power on OLED and looks superb in the dark. */
+:root[data-theme="carbon"] {
+  color-scheme: dark;
+  --bg:        #000000;
+  --bg-2:      #070707;
+  --surface:   #0e0e0e;
+  --surface-2: #151515;
+  --surface-3: #1e1e1e;
+  --border:    #1c1c1c;
+  --border-2:  #2a2a2a;
+  --text:      #f2f2f2;
+  --text-2:    #a8a8a8;
+  --muted:     #7c7c7c;
+  --dim:       #565656;
+  --shadow:    0 1px 2px rgb(0 0 0 / .5), 0 8px 28px -6px rgb(0 0 0 / .7);
+  --shadow-lg: 0 24px 70px -12px rgb(0 0 0 / .85), 0 2px 8px rgb(0 0 0 / .5);
+}
+
+/* Nord — the arctic palette. */
+:root[data-theme="nord"] {
+  color-scheme: dark;
+  --bg:        #242933;
+  --bg-2:      #2e3440;
+  --surface:   #333b4a;
+  --surface-2: #3b4252;
+  --surface-3: #434c5e;
+  --border:    #3b4252;
+  --border-2:  #4c566a;
+  --text:      #eceff4;
+  --text-2:    #c3cad8;
+  --muted:     #97a1b4;
+  --dim:       #6f7b91;
+  --shadow:    0 1px 2px rgb(0 0 0 / .25), 0 8px 28px -6px rgb(0 0 0 / .42);
+  --shadow-lg: 0 24px 70px -12px rgb(0 0 0 / .55), 0 2px 8px rgb(0 0 0 / .3);
+  --s-download: #88c0d0;
+  --s-seed:     #a3be8c;
+  --s-check:    #ebcb8b;
+  --s-error:    #bf616a;
+  --s-queue:    #b48ead;
+  --s-meta:     #8fbcbb;
+}
+
+/* Dracula — high-chroma dark. */
+:root[data-theme="dracula"] {
+  color-scheme: dark;
+  --bg:        #1a1b26;
+  --bg-2:      #21222c;
+  --surface:   #282a36;
+  --surface-2: #31333f;
+  --surface-3: #3d3f4d;
+  --border:    #343746;
+  --border-2:  #44475a;
+  --text:      #f8f8f2;
+  --text-2:    #c3c4ce;
+  --muted:     #8f91a2;
+  --dim:       #6b6d80;
+  --shadow:    0 1px 2px rgb(0 0 0 / .3), 0 8px 28px -6px rgb(0 0 0 / .5);
+  --shadow-lg: 0 24px 70px -12px rgb(0 0 0 / .62), 0 2px 8px rgb(0 0 0 / .32);
+  --s-download: #8be9fd;
+  --s-seed:     #50fa7b;
+  --s-check:    #f1fa8c;
+  --s-error:    #ff5555;
+  --s-queue:    #bd93f9;
+  --s-meta:     #8be9fd;
+}
+
+/* ══════════════════════════ light themes ══════════════════════════ */
+
+/* Paper — the default light theme. Cool neutral. */
+:root[data-theme="paper"] {
+  color-scheme: light;
+  --bg:        #f6f7f9;
+  --bg-2:      #eef0f4;
+  --surface:   #ffffff;
+  --surface-2: #f4f5f8;
+  --surface-3: #e9ebf0;
+  --border:    #e2e5ec;
+  --border-2:  #d3d8e2;
+  --text:      #10131a;
+  --text-2:    #454c5c;
+  --muted:     #6b7383;
+  --dim:       #8d95a5;
+  --shadow:    0 1px 2px rgb(16 19 26 / .06), 0 8px 24px -8px rgb(16 19 26 / .16);
+  --shadow-lg: 0 24px 60px -12px rgb(16 19 26 / .22), 0 2px 8px rgb(16 19 26 / .08);
+  --s-pause:   #7a8291;
+  --s-stall:   #7c8797;
+  --s-seed:    #16a34a;
+  --s-check:   #d97706;  --scrim:     rgb(18 22 33 / .38);
+  --scrim-soft: rgb(18 22 33 / .32);
+  --field-bg:  var(--surface);
+}
+
+/* Sandstone — warm light, lower glare. */
+:root[data-theme="sandstone"] {
+  color-scheme: light;
+  --bg:        #f7f4ef;
+  --bg-2:      #f1ece4;
+  --surface:   #fffdfa;
+  --surface-2: #f5f1ea;
+  --surface-3: #eae4d9;
+  --border:    #e5ded2;
+  --border-2:  #d6ccbb;
+  --text:      #1c1814;
+  --text-2:    #4f4740;
+  --muted:     #736a5f;
+  --dim:       #978d80;
+  --shadow:    0 1px 2px rgb(40 32 20 / .07), 0 8px 24px -8px rgb(40 32 20 / .16);
+  --shadow-lg: 0 24px 60px -12px rgb(40 32 20 / .2), 0 2px 8px rgb(40 32 20 / .08);
+  --s-pause:   #7d7468;
+  --s-stall:   #857c70;
+  --s-seed:    #15803d;
+  --s-check:   #c2650a;  --scrim:     rgb(18 22 33 / .38);
+  --scrim-soft: rgb(18 22 33 / .32);
+  --field-bg:  var(--surface);
+}
+
+/* ══════════════════════════ accessibility ══════════════════════════ */
+
+/* Contrast — pushes every pair past WCAG AAA and removes soft fills.
+   Borders get brighter rather than dimmer, which is the opposite of what
+   the aesthetic themes do. */
+:root[data-theme="contrast"] {
+  color-scheme: dark;
+  --bg:        #000000;
+  --bg-2:      #000000;
+  --surface:   #0d0d0d;
+  --surface-2: #1a1a1a;
+  --surface-3: #262626;
+  --border:    #5a5a5a;
+  --border-2:  #8a8a8a;
+  --text:      #ffffff;
+  --text-2:    #e8e8e8;
+  --muted:     #c4c4c4;
+  --dim:       #a0a0a0;
+  --shadow:    0 0 0 1px #5a5a5a;
+  --shadow-lg: 0 0 0 2px #8a8a8a, 0 24px 70px -12px rgb(0 0 0 / .9);
+  --s-download: #4da3ff;
+  --s-seed:     #3ee07a;
+  --s-pause:    #b0b0b0;
+  --s-queue:    #d08bff;
+  --s-check:    #ffc233;
+  --s-error:    #ff6b6b;
+  --s-stall:    #9aa4b0;
+  --s-meta:     #3fd8e8;
+}
+:root[data-theme="contrast"] .filter.on,
+:root[data-theme="contrast"] .btn.active { outline: 1px solid var(--accent-2); }
+
+/* ══════════════════════════ accents ══════════════════════════════ */
+
+:root, :root[data-accent="violet"] { --accent: #8b5cf6; --accent-2: #a78bfa; --accent-ink: #ffffff; }
+:root[data-accent="blue"]   { --accent: #3b82f6; --accent-2: #60a5fa; --accent-ink: #ffffff; }
+:root[data-accent="teal"]   { --accent: #14b8a6; --accent-2: #2dd4bf; --accent-ink: #04211e; }
+:root[data-accent="green"]  { --accent: #10b981; --accent-2: #34d399; --accent-ink: #042016; }
+:root[data-accent="amber"]  { --accent: #f59e0b; --accent-2: #fbbf24; --accent-ink: #1a1204; }
+:root[data-accent="rose"]   { --accent: #f43f5e; --accent-2: #fb7185; --accent-ink: #ffffff; }
+:root[data-accent="cyan"]   { --accent: #06b6d4; --accent-2: #22d3ee; --accent-ink: #04191d; }
+
+/* Derived accent tints. Defined once so every component's "selected" and
+   "hover" state stays in step with the chosen accent automatically. */
+:root {
+  --accent-soft:   color-mix(in oklab, var(--accent) 18%, transparent);
+  --accent-softer: color-mix(in oklab, var(--accent) 10%, transparent);
+  --accent-strong: color-mix(in oklab, var(--accent) 30%, transparent);
+  --accent-line:   color-mix(in oklab, var(--accent) 42%, transparent);
+  --ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+}
+
+/* ══════════════════════════ density ══════════════════════════════ */
+
+:root[data-density="compact"] {
+  --row-h: 30px;
+  --ctl-h: 27px;
+  --topbar-h: 46px;
+  --toolbar-h: 36px;
+  --gap: 6px;
+  --fs-2xs: 9.5px;
+  --fs-xs: 10.5px;
+  --fs-sm: 11px;
+  --fs-md: 11.5px;
+  --fs-lg: 12px;
+  --fs-xl: 13px;
+  --fs-2xl: 16px;
+}
+
+:root[data-density="comfortable"] {
+  --row-h: 50px;
+  --ctl-h: 34px;
+  --topbar-h: 58px;
+  --toolbar-h: 48px;
+  --gap: 10px;
+  --fs-2xs: 10.5px;
+  --fs-xs: 11.5px;
+  --fs-sm: 12.5px;
+  --fs-md: 13.5px;
+  --fs-lg: 14px;
+  --fs-xl: 15px;
+  --fs-2xl: 18px;
+}
+
+/* ══════════════════════════ motion preference ══════════════════════
+   Honoured from both the OS and the in-app setting. Durations collapse to
+   ~0 rather than animations being removed, so no layout depends on a
+   transition having run. */
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"]) {
+    --dur-instant: 1ms; --dur-fast: 1ms; --dur-base: 1ms;
+    --dur-slow: 1ms; --dur-panel: 1ms;
+  }
+  :root:not([data-motion="full"]) *,
+  :root:not([data-motion="full"]) *::before,
+  :root:not([data-motion="full"]) *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+:root[data-motion="reduced"] {
+  --dur-instant: 1ms; --dur-fast: 1ms; --dur-base: 1ms;
+  --dur-slow: 1ms; --dur-panel: 1ms;
+}
+:root[data-motion="reduced"] *,
+:root[data-motion="reduced"] *::before,
+:root[data-motion="reduced"] *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important;
+}

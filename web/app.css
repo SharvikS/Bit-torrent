@@ -1,79 +1,10 @@
 /* ══════════════════════════════════════════════════════════════════════
-   Fission — design system
+   Fission — components
 
-   Dense but calm. The palette is built from a single neutral ramp plus one
-   accent, with a fixed set of semantic state hues that stay constant across
-   themes so a green row always means "seeding" regardless of light/dark.
+   Tokens (colour, type scale, motion, density) live in theme.css and are
+   the only thing a rule here is allowed to reference. If you find yourself
+   typing a hex value or a millisecond count below, it belongs in a token.
    ══════════════════════════════════════════════════════════════════════ */
-
-:root {
-  /* neutral ramp — dark theme is the default */
-  --bg:          #0a0b0f;
-  --bg-2:        #0e1015;
-  --surface:     #14161d;
-  --surface-2:   #191c25;
-  --surface-3:   #21252f;
-  --border:      #23262f;
-  --border-2:    #2d313c;
-  --text:        #e9ebf0;
-  --text-2:      #a7adbd;
-  --muted:       #767e91;
-  --dim:         #545b6b;
-
-  /* accent (overridden by [data-accent]) */
-  --accent:      #8b5cf6;
-  --accent-2:    #a78bfa;
-  --accent-ink:  #ffffff;
-  --accent-soft: color-mix(in oklab, var(--accent) 18%, transparent);
-
-  /* semantic state hues */
-  --s-download:  #3b82f6;
-  --s-seed:      #22c55e;
-  --s-pause:     #6b7280;
-  --s-queue:     #a855f7;
-  --s-check:     #f59e0b;
-  --s-error:     #ef4444;
-  --s-stall:     #64748b;
-  --s-meta:      #06b6d4;
-
-  --radius:      9px;
-  --radius-sm:   6px;
-  --radius-lg:   14px;
-  --shadow:      0 1px 2px rgba(0,0,0,.28), 0 8px 28px -6px rgba(0,0,0,.5);
-  --shadow-lg:   0 24px 70px -12px rgba(0,0,0,.65), 0 2px 8px rgba(0,0,0,.35);
-  --ring:        0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
-
-  --row-h:       40px;
-  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
-          "Helvetica Neue", Arial, sans-serif;
-  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-          "Liberation Mono", monospace;
-}
-
-:root[data-theme="light"] {
-  --bg:          #f6f7f9;
-  --bg-2:        #eef0f4;
-  --surface:     #ffffff;
-  --surface-2:   #f4f5f8;
-  --surface-3:   #e9ebf0;
-  --border:      #e2e5ec;
-  --border-2:    #d3d8e2;
-  --text:        #10131a;
-  --text-2:      #454c5c;
-  --muted:       #6b7383;
-  --dim:         #8d95a5;
-  --shadow:      0 1px 2px rgba(16,19,26,.06), 0 8px 24px -8px rgba(16,19,26,.16);
-  --shadow-lg:   0 24px 60px -12px rgba(16,19,26,.22), 0 2px 8px rgba(16,19,26,.08);
-  --s-pause:     #7a8291;
-  --s-stall:     #7c8797;
-}
-
-:root[data-accent="violet"] { --accent:#8b5cf6; --accent-2:#a78bfa; }
-:root[data-accent="blue"]   { --accent:#3b82f6; --accent-2:#60a5fa; }
-:root[data-accent="green"]  { --accent:#10b981; --accent-2:#34d399; }
-:root[data-accent="amber"]  { --accent:#f59e0b; --accent-2:#fbbf24; --accent-ink:#1a1204; }
-:root[data-accent="rose"]   { --accent:#f43f5e; --accent-2:#fb7185; }
-:root[data-accent="cyan"]   { --accent:#06b6d4; --accent-2:#22d3ee; --accent-ink:#04191d; }
 
 * { box-sizing: border-box; }
 
@@ -82,6 +13,22 @@
    specificity, so any author rule that sets `display` on the same element
    silently defeats it — which is every panel below. Assert it once here. */
 [hidden] { display: none !important; }
+
+/* Switching theme repaints every surface at once. Without a transition it
+   reads as a flash; with one it reads as a dissolve. Scoped to a class the
+   script adds for the duration of the swap, so it never costs anything
+   during normal interaction. */
+.theming, .theming *, .theming *::before, .theming *::after {
+  transition: background-color var(--dur-slow) var(--ease-out),
+              border-color var(--dur-slow) var(--ease-out),
+              color var(--dur-slow) var(--ease-out),
+              box-shadow var(--dur-slow) var(--ease-out) !important;
+}
+
+/* Focus is never invisible, but only shows for keyboard users. */
+:focus-visible { outline: none; box-shadow: var(--ring); border-radius: var(--radius-sm); }
+
+::selection { background: var(--accent-strong); color: var(--text); }
 
 html, body {
   height: 100%;
@@ -92,7 +39,7 @@ html, body {
 body {
   background: var(--bg);
   color: var(--text);
-  font: 400 13px/1.5 var(--font);
+  font: 400 var(--fs-lg)/1.5 var(--font);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   accent-color: var(--accent);
@@ -138,12 +85,12 @@ kbd {
 #app {
   height: 100%;
   display: grid;
-  grid-template-rows: 52px minmax(0, 1fr) 26px;
+  grid-template-rows: var(--topbar-h) minmax(0, 1fr) var(--status-h);
 }
 
 .body {
   display: grid;
-  grid-template-columns: 228px minmax(0, 1fr);
+  grid-template-columns: var(--side-w) minmax(0, 1fr);
   /* The implicit row defaults to `auto`, which sizes to the tallest child —
      letting a long detail panel push the whole region past the status bar.
      Pinning it to minmax(0,1fr) makes the children scroll instead of grow. */
@@ -152,7 +99,7 @@ kbd {
   overflow: hidden;
   background: var(--bg);
 }
-.body.with-detail { grid-template-columns: 228px minmax(0, 1fr) clamp(360px, 32vw, 460px); }
+.body.with-detail { grid-template-columns: var(--side-w) minmax(0, 1fr) var(--detail-w, clamp(360px, 32vw, 460px)); }
 
 /* ══════════════════════════ topbar ══════════════════════════ */
 
@@ -186,12 +133,12 @@ kbd {
   display: flex; align-items: center; gap: 7px;
   width: clamp(180px, 26vw, 320px);
   padding: 0 9px;
-  height: 31px;
+  height: var(--ctl-h);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   color: var(--muted);
-  transition: border-color .14s, box-shadow .14s;
+  transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
 }
 .search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .search input {
@@ -220,23 +167,25 @@ kbd {
 .btn {
   display: inline-flex; align-items: center; justify-content: center;
   gap: 6px;
-  height: 31px;
+  height: var(--ctl-h);
   padding: 0 11px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--text-2);
-  font: 500 12.5px/1 var(--font);
+  font: 500 var(--fs-md)/1 var(--font);
   cursor: pointer;
   white-space: nowrap;
-  transition: background .13s, color .13s, border-color .13s, transform .06s;
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out), transform var(--dur-instant) var(--ease-out),
+              box-shadow var(--dur-fast) var(--ease-out);
 }
 .btn:hover:not(:disabled) { background: var(--surface-2); color: var(--text); border-color: var(--border-2); }
 .btn:active:not(:disabled) { transform: translateY(1px); }
 .btn:focus-visible { outline: 0; box-shadow: var(--ring); }
 .btn:disabled { opacity: .36; cursor: default; }
 
-.btn.icon { width: 31px; padding: 0; }
+.btn.icon { width: var(--ctl-h); padding: 0; }
 .btn.ghost { background: none; border-color: transparent; }
 .btn.ghost:hover:not(:disabled) { background: var(--surface-2); border-color: transparent; }
 .btn.primary {
@@ -279,7 +228,7 @@ kbd {
 .side-head {
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 8px 5px;
-  font: 600 10.5px/1 var(--font);
+  font: 600 var(--fs-2xs)/1 var(--font);
   letter-spacing: .07em; text-transform: uppercase;
   color: var(--dim);
 }
@@ -288,12 +237,11 @@ kbd {
 
 .filter {
   display: flex; align-items: center; gap: 8px;
-  height: 28px; padding: 0 8px;
+  height: calc(var(--ctl-h) - 3px); padding: 0 8px;
   border: 0; border-radius: var(--radius-sm);
   background: none; color: var(--text-2);
-  font: 500 12.5px/1 var(--font);
+  font: 500 var(--fs-md)/1 var(--font);
   cursor: pointer; text-align: left;
-  transition: background .12s, color .12s;
 }
 .filter:hover { background: var(--surface-2); color: var(--text); }
 .filter.on { background: var(--accent-soft); color: var(--accent-2); font-weight: 560; }
@@ -318,7 +266,7 @@ kbd {
 
 .main {
   display: grid;
-  grid-template-rows: 42px minmax(0, 1fr);
+  grid-template-rows: var(--toolbar-h) minmax(0, 1fr);
   min-width: 0;
   container-type: inline-size;
   container-name: main;
@@ -359,7 +307,7 @@ table.torrents {
   border-bottom: 1px solid var(--border);
   padding: 0 10px;
   height: 30px;
-  font: 600 11px/1 var(--font);
+  font: 600 var(--fs-xs)/1 var(--font);
   letter-spacing: .02em;
   color: var(--muted);
   text-align: left;
@@ -376,7 +324,7 @@ table.torrents {
 .torrents tbody tr {
   height: var(--row-h);
   cursor: default;
-  transition: background .1s;
+  transition: background-color var(--dur-fast) var(--ease-out);
 }
 .torrents tbody tr:hover { background: var(--surface); }
 .torrents tbody tr.sel { background: var(--accent-soft); }
@@ -388,7 +336,7 @@ table.torrents {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 12.5px;
+  font-size: var(--fs-md);
   color: var(--text-2);
 }
 .torrents td.num { text-align: right; }
@@ -418,7 +366,7 @@ table.torrents {
   position: absolute; inset: 0 auto 0 0;
   border-radius: 20px;
   background: var(--accent);
-  transition: width .5s cubic-bezier(.4,0,.2,1);
+  transition: width var(--dur-slow) var(--ease-out), background-color var(--dur-base) var(--ease-out);
 }
 .bar.s-seeding > i, .bar.s-finished > i { background: var(--s-seed); }
 .bar.s-downloading > i { background: var(--s-download); }
@@ -572,7 +520,7 @@ table.torrents {
   border: 1px solid var(--border); border-radius: 5px; cursor: pointer;
 }
 .folder-row { display: flex; align-items: center; gap: 6px; padding: 5px 4px; font-weight: 600; font-size: 11.5px; color: var(--text-2); }
-.folder-row .caret { transition: transform .15s; width: 12px; height: 12px; }
+.folder-row .caret { transition: transform var(--dur-base) var(--ease-out); width: 12px; height: 12px; }
 .folder-row.closed .caret { transform: rotate(-90deg); }
 .file-children { padding-left: 15px; border-left: 1px solid var(--border); margin-left: 6px; }
 
@@ -595,7 +543,7 @@ table.torrents {
   padding: 0 12px;
   background: var(--bg-2);
   border-top: 1px solid var(--border);
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
@@ -611,7 +559,7 @@ table.torrents {
   position: fixed; inset: 0; z-index: 90;
   display: grid; place-items: start center;
   padding: clamp(16px, 7vh, 80px) 16px 16px;
-  background: color-mix(in oklab, #000 55%, transparent);
+  background: var(--scrim);
   backdrop-filter: blur(3px);
   overflow-y: auto;
   animation: fade .14s ease;
@@ -671,15 +619,14 @@ input[type="search"], input[type="time"], textarea, select {
   width: 100%;
   height: 32px;
   padding: 0 10px;
-  background: var(--bg);
+  background: var(--field-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text);
   font: inherit;
   outline: 0;
-  transition: border-color .13s, box-shadow .13s;
+  transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
 }
-:root[data-theme="light"] input, :root[data-theme="light"] textarea, :root[data-theme="light"] select { background: var(--surface); }
 textarea { height: auto; padding: 8px 10px; resize: vertical; min-height: 74px; font: 12px/1.6 var(--mono); }
 input:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 input::placeholder, textarea::placeholder { color: var(--dim); }
@@ -776,7 +723,7 @@ select { cursor: pointer; appearance: none; padding-right: 26px;
   position: fixed; inset: 0; z-index: 97;
   display: grid; place-items: start center;
   padding: clamp(40px, 14vh, 140px) 16px 16px;
-  background: color-mix(in oklab, #000 50%, transparent);
+  background: var(--scrim-soft);
   backdrop-filter: blur(3px);
 }
 .palette {
@@ -813,7 +760,7 @@ select { cursor: pointer; appearance: none; padding-right: 26px;
 .drop-veil {
   position: fixed; inset: 0; z-index: 96;
   display: grid; place-items: center;
-  background: color-mix(in oklab, var(--accent) 16%, color-mix(in oklab, #000 52%, transparent));
+  background: color-mix(in oklab, var(--accent) 16%, var(--scrim-soft));
   backdrop-filter: blur(3px);
   pointer-events: none;
 }
@@ -856,9 +803,9 @@ select { cursor: pointer; appearance: none; padding-right: 26px;
 /* ══════════════════════════ responsive ══════════════════════════ */
 
 @media (max-width: 1180px) {
-  .body.with-detail { grid-template-columns: 228px minmax(0, 1fr); }
+  .body.with-detail { grid-template-columns: var(--side-w) minmax(0, 1fr); }
   .body.with-detail .detail {
-    position: fixed; right: 0; top: 52px; bottom: 26px; z-index: 40;
+    position: fixed; right: 0; top: var(--topbar-h); bottom: var(--status-h); z-index: 40;
     width: min(420px, 92vw);
     box-shadow: var(--shadow-lg);
   }
@@ -873,9 +820,302 @@ select { cursor: pointer; appearance: none; padding-right: 26px;
 }
 @media (max-width: 720px) {
   .body, .body.with-detail { grid-template-columns: minmax(0, 1fr); }
-  .sidebar { position: fixed; left: 0; top: 52px; bottom: 26px; z-index: 45; width: 228px;
-             transform: translateX(-100%); transition: transform .2s; box-shadow: var(--shadow-lg); }
+  .sidebar { position: fixed; left: 0; top: var(--topbar-h); bottom: var(--status-h); z-index: 45; width: var(--side-w);
+             transform: translateX(-100%); transition: transform var(--t-panel); box-shadow: var(--shadow-lg); }
   .sidebar.open { transform: none; }
   .search { width: auto; flex: 1; }
   .search kbd { display: none; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   Motion & polish
+
+   Rules of the road for everything below:
+   · Motion explains a change — it never decorates one.
+   · Anything that repeats on the 1 Hz tick must not animate, or the table
+     would shimmer permanently. Only *arrivals* and *departures* animate.
+   · Nothing here is load-bearing: with durations collapsed to 1ms the
+     layout is identical.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── accessibility utilities ─────────────────────────────────────── */
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+.skip-link {
+  position: fixed; top: 8px; left: 8px; z-index: 200;
+  padding: 8px 14px;
+  background: var(--accent); color: var(--accent-ink);
+  border-radius: var(--radius); font-weight: 600;
+  transform: translateY(-160%);
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.skip-link:focus { transform: none; }
+
+/* ── table rows ──────────────────────────────────────────────────── */
+
+/* A newly added torrent slides in; nothing else in the table moves. */
+@keyframes row-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+.torrents tbody tr.enter { animation: row-in var(--dur-slow) var(--ease-out) both; }
+
+/* Selection gets a solid accent rail rather than only a tint, so it stays
+   legible in the high-contrast theme and for colour-blind users. */
+.torrents tbody tr { position: relative; }
+.torrents tbody tr.sel td:first-child::before {
+  content: "";
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 2px; background: var(--accent);
+  animation: rail-in var(--dur-base) var(--ease-out) both;
+}
+@keyframes rail-in { from { transform: scaleY(.2); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* Row reordering after a sort. The script measures, reorders, then adds
+   this class with a per-row --dy so the browser interpolates the move. */
+.torrents tbody tr.flip {
+  animation: flip-move var(--dur-slow) var(--ease-out) both;
+}
+@keyframes flip-move {
+  from { transform: translateY(var(--dy)); }
+  to   { transform: none; }
+}
+
+/* ── progress ────────────────────────────────────────────────────── */
+
+/* An active download gets a slow sheen. Seeding and paused bars stay
+   still — motion here means "bytes are moving right now". */
+.bar.s-downloading > i::after,
+.bar.s-metadata > i::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(100deg,
+    transparent 20%, rgb(255 255 255 / .28) 50%, transparent 80%);
+  animation: sheen 1.9s linear infinite;
+}
+/* The fill is already `position:absolute` where it is declared above — only
+   add clipping here, or the sheen's containing block would be reset and the
+   empty <i> would collapse to zero height. */
+.bar > i { overflow: hidden; }
+@keyframes sheen { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+/* ── skeleton loading ────────────────────────────────────────────── */
+
+/* Shown for the moment between "page painted" and "first snapshot", so
+   the app never flashes an empty table that then fills. */
+.skeleton {
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg,
+    var(--surface-2) 25%, var(--surface-3) 37%, var(--surface-2) 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+.sk-row { display: flex; align-items: center; gap: 12px; height: var(--row-h); padding: 0 10px; }
+.sk-row > .skeleton { height: 9px; }
+
+/* ── sidebar ─────────────────────────────────────────────────────── */
+
+.filter {
+  position: relative;
+  transition: background-color var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out);
+}
+.filter::before {
+  content: "";
+  position: absolute; left: 0; top: 50%;
+  width: 2px; height: 0;
+  border-radius: 0 2px 2px 0;
+  background: var(--accent);
+  transform: translateY(-50%);
+  transition: height var(--dur-base) var(--ease-spring);
+}
+.filter.on::before { height: 58%; }
+.filter .count { transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out); }
+
+/* ── detail panel ────────────────────────────────────────────────── */
+
+.detail { animation: panel-in var(--dur-panel) var(--ease-out) both; }
+@keyframes panel-in {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Drag handle on the panel's leading edge. Sits in the gutter, widens its
+   hit area beyond its visual width so it is actually grabbable. */
+.detail-resize {
+  position: absolute; left: -3px; top: 0; bottom: 0;
+  width: 7px; cursor: col-resize; z-index: 5;
+  background: none; border: 0; padding: 0;
+}
+.detail-resize::after {
+  content: "";
+  position: absolute; left: 3px; top: 0; bottom: 0;
+  width: 1px; background: transparent;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.detail-resize:hover::after, .detail-resize:focus-visible::after,
+.resizing .detail-resize::after { background: var(--accent); }
+.detail { position: relative; }
+body.resizing { cursor: col-resize; user-select: none; }
+
+/* Tab underline travels between tabs instead of cutting. */
+.tabs { position: relative; }
+.tab::after {
+  content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px;
+  height: 2px; border-radius: 2px 2px 0 0; background: var(--accent);
+  transform: scaleX(0); transform-origin: center;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.tab.active::after { transform: scaleX(1); }
+.tab { transition: color var(--dur-fast) var(--ease-out); }
+
+/* Tab panels cross-fade on switch. */
+.detail-body > * { animation: fade-up var(--dur-base) var(--ease-out) both; }
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Stat tiles lift very slightly on hover — enough to read as interactive. */
+.stat {
+  transition: transform var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out);
+}
+.stat:hover { transform: translateY(-1px); border-color: var(--border-2); }
+
+/* ── scroll affordance ───────────────────────────────────────────── */
+
+/* A top shadow appears only once the table is actually scrolled, so the
+   header never looks detached at rest. */
+.table-wrap::before {
+  content: "";
+  position: sticky; top: 0; z-index: 4;
+  display: block; height: 0;
+  box-shadow: 0 0 0 0 transparent;
+  transition: box-shadow var(--dur-base) var(--ease-out);
+}
+.table-wrap.scrolled::before { box-shadow: 0 6px 14px -8px rgb(0 0 0 / .55); }
+
+/* ── menus, modals, toasts ───────────────────────────────────────── */
+
+.menu { animation: menu-in var(--dur-fast) var(--ease-out) both; transform-origin: top left; }
+@keyframes menu-in {
+  from { opacity: 0; transform: scale(.97) translateY(-3px); }
+  to   { opacity: 1; transform: none; }
+}
+.menu button { transition: background-color var(--dur-instant) var(--ease-out), color var(--dur-instant) var(--ease-out); }
+
+.modal { animation: modal-in var(--dur-slow) var(--ease-spring) both; }
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(-12px) scale(.98); }
+  to   { opacity: 1; transform: none; }
+}
+.modal-root { animation: veil-in var(--dur-base) var(--ease-out) both; }
+@keyframes veil-in { from { opacity: 0; } to { opacity: 1; } }
+
+.toast { animation: toast-in var(--dur-slow) var(--ease-spring) both; }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(24px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+.toast.out { animation: toast-out var(--dur-base) var(--ease-in-out) both; }
+@keyframes toast-out {
+  to { opacity: 0; transform: translateX(24px) scale(.97); }
+}
+/* A thin bar drains for the toast's lifetime so a dismissal never
+   surprises the reader. */
+.toast { position: relative; overflow: hidden; }
+.toast::after {
+  content: ""; position: absolute; left: 0; bottom: 0; height: 2px;
+  width: 100%; background: currentColor; opacity: .18;
+  transform-origin: left;
+  animation: drain var(--toast-life, 4200ms) linear both;
+}
+@keyframes drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+.palette { animation: modal-in var(--dur-slow) var(--ease-spring) both; }
+.palette-item { transition: background-color var(--dur-instant) var(--ease-out), color var(--dur-instant) var(--ease-out); }
+
+/* ── connection state ────────────────────────────────────────────── */
+
+/* When the socket drops, the data on screen is stale. Say so by draining
+   its colour rather than blanking the table. */
+#app.stale .table-wrap, #app.stale .detail-body, #app.stale .sidebar {
+  filter: saturate(.45) opacity(.7);
+  transition: filter var(--dur-slow) var(--ease-out);
+}
+.conn i { transition: background-color var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out); }
+.conn:not(.on):not(.off) i { animation: pulse 1.3s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+
+/* ── buttons ─────────────────────────────────────────────────────── */
+
+.btn.primary { box-shadow: 0 1px 2px rgb(0 0 0 / .16); }
+.btn.primary:hover:not(:disabled) { box-shadow: 0 2px 10px -2px var(--accent-line); }
+.btn:disabled { cursor: not-allowed; }
+
+/* Icon buttons rotate their glyph on activation where the action implies
+   it — recheck and reannounce both re-run something. */
+.btn.icon.spin .ico { animation: spin-once var(--dur-slow) var(--ease-in-out); }
+@keyframes spin-once { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+/* ── empty state ─────────────────────────────────────────────────── */
+
+.empty { animation: fade-up var(--dur-slow) var(--ease-out) both; }
+
+/* ── theme picker ────────────────────────────────────────────────── */
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 8px;
+}
+.theme-card {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out),
+              box-shadow var(--dur-fast) var(--ease-out);
+}
+.theme-card:hover { border-color: var(--border-2); transform: translateY(-1px); }
+.theme-card.on { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.theme-card:focus-visible { outline: 0; box-shadow: var(--ring); }
+
+/* A miniature of the theme: its background plus two text-weight bars. */
+.theme-chip {
+  height: 36px;
+  display: flex; flex-direction: column; justify-content: flex-end; gap: 3px;
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.theme-chip i { display: block; height: 3px; border-radius: 2px; }
+.theme-chip i:first-child { width: 72%; }
+.theme-chip i:last-child  { width: 44%; }
+.theme-name { font-size: var(--fs-xs); font-weight: 550; color: var(--text-2); }
+.theme-card.on .theme-name { color: var(--accent-2); }
+
+.swatch {
+  transition: transform var(--dur-fast) var(--ease-spring),
+              box-shadow var(--dur-fast) var(--ease-out);
+  box-shadow: 0 0 0 0 var(--accent-soft);
+}
+.swatch:hover { transform: scale(1.12); }
+.swatch.on { transform: scale(1.08); }
+
+.seg button { transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out); }
+
+/* ── skeleton container ──────────────────────────────────────────── */
+
+.skeleton-wrap { display: block; }
+.skeleton-wrap .sk-row + .sk-row { border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent); }

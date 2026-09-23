@@ -17,9 +17,16 @@ export function toast(title, message = '', kind = 'info', ttl = 4200) {
   const root = toastRoot();
   const el = document.createElement('div');
   el.className = `toast ${kind}`;
+  // The drain bar's duration has to match the real lifetime, so it is passed
+  // in rather than duplicated as a magic number in the stylesheet.
+  el.style.setProperty('--toast-life', `${ttl}ms`);
   el.innerHTML =
     `<div class="tbody"><div class="ttitle">${esc(title)}</div>` +
     (message ? `<div class="tmsg">${esc(message)}</div>` : '') + '</div>';
+
+  // A toast is a visual-only event; mirror it into the live region so screen
+  // readers are told a download finished or an action failed.
+  announce(`${title}${message ? '. ' + message : ''}`);
 
   const dismiss = () => {
     if (!el.isConnected) return;
@@ -31,6 +38,15 @@ export function toast(title, message = '', kind = 'info', ttl = 4200) {
   // Never let a burst of events bury the screen.
   while (root.children.length > 5) root.firstElementChild.remove();
   setTimeout(dismiss, ttl);
+}
+
+/** Send a message to the polite live region for assistive technology. */
+export function announce(text) {
+  const live = document.getElementById('live-region');
+  if (!live) return;
+  // Re-setting identical text does not re-announce; clear first.
+  live.textContent = '';
+  setTimeout(() => { live.textContent = text; }, 40);
 }
 
 export const toastError = (err) =>

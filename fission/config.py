@@ -93,15 +93,25 @@ DEFAULTS: dict[str, Any] = {
     "default_trackers": "",        # newline separated, appended to every add
 
     # ---- interface -------------------------------------------------------
-    "theme": "dark",
+    # system | midnight | graphite | carbon | nord | dracula | paper
+    # | sandstone | contrast
+    "theme": "midnight",
+    # violet | blue | teal | green | amber | rose | cyan
     "accent": "violet",
+    "density": "cozy",             # compact | cozy | comfortable
+    "motion": "system",            # system | full | reduced
     "speed_unit": "binary",        # binary (KiB) | decimal (kB)
     "confirm_delete": True,
     "notifications": True,
 }
 
+# Theme names changed when the palette grew from two options to a named set.
+# Old configs are rewritten on load so nobody lands on a blank appearance.
+THEME_ALIASES = {"dark": "midnight", "light": "paper", "auto": "system"}
+
 # Keys that only affect the UI: changing them never restarts the session.
-UI_KEYS = {"theme", "accent", "speed_unit", "confirm_delete", "notifications"}
+UI_KEYS = {"theme", "accent", "density", "motion", "speed_unit",
+           "confirm_delete", "notifications"}
 
 
 class Config:
@@ -127,6 +137,8 @@ class Config:
         for key, value in stored.items():
             if key in DEFAULTS:
                 self.data[key] = value
+        # Migrate any renamed values before the rest of the app reads them.
+        self.data["theme"] = THEME_ALIASES.get(self.data["theme"], self.data["theme"])
 
     def save(self) -> None:
         self.state_dir.mkdir(parents=True, exist_ok=True)

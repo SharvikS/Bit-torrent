@@ -1,11 +1,33 @@
 <!doctype html>
-<html lang="en" data-theme="dark" data-accent="violet">
+<html lang="en" data-theme="midnight" data-accent="violet" data-density="cozy" data-motion="system">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark light">
 <title>Fission</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='5' fill='%238b5cf6'/><ellipse cx='16' cy='16' rx='14' ry='6' fill='none' stroke='%238b5cf6' stroke-width='2'/><ellipse cx='16' cy='16' rx='14' ry='6' fill='none' stroke='%238b5cf6' stroke-width='2' transform='rotate(60 16 16)'/><ellipse cx='16' cy='16' rx='14' ry='6' fill='none' stroke='%238b5cf6' stroke-width='2' transform='rotate(120 16 16)'/></svg>">
+<script>
+/* Appearance is restored before the first paint. app.js loads as a module,
+   which is deferred by definition — without this the page would render in
+   the default theme for a frame and then repaint into the chosen one. */
+(function () {
+  try {
+    var p = JSON.parse(localStorage.getItem('fission.prefs.v1') || '{}');
+    var alias = { dark: 'midnight', light: 'paper', auto: 'system' };
+    var t = alias[p.theme] || p.theme || 'midnight';
+    if (t === 'system') {
+      t = matchMedia('(prefers-color-scheme: light)').matches ? 'paper' : 'midnight';
+    }
+    var r = document.documentElement;
+    r.dataset.theme = t;
+    if (p.accent) r.dataset.accent = p.accent;
+    if (p.density) r.dataset.density = p.density;
+    if (p.motion) r.dataset.motion = p.motion;
+    r.style.colorScheme = (t === 'paper' || t === 'sandstone') ? 'light' : 'dark';
+  } catch (e) { /* private mode or blocked storage: defaults are fine */ }
+})();
+</script>
+<link rel="stylesheet" href="theme.css">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -22,10 +44,13 @@
   </form>
 </div>
 
+<a class="skip-link" href="#table">Skip to torrent list</a>
+<div id="live-region" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
 <div id="app" hidden>
 
   <!-- ══════════════════════ top bar ══════════════════════ -->
-  <header class="topbar">
+  <header class="topbar" role="banner">
     <div class="brand">
       <div class="brand-mark" aria-hidden="true"></div>
       <span class="brand-name">Fission</span>
@@ -67,7 +92,7 @@
   <div class="body">
 
     <!-- ══════════════════════ sidebar ══════════════════════ -->
-    <aside class="sidebar" id="sidebar">
+    <aside class="sidebar" id="sidebar" aria-label="Filters">
       <nav class="filters" id="status-filters"></nav>
 
       <div class="side-group">
@@ -93,7 +118,7 @@
 
     <!-- ══════════════════════ main ══════════════════════ -->
     <main class="main">
-      <div class="toolbar" id="toolbar">
+      <div class="toolbar" id="toolbar" role="toolbar" aria-label="Torrent actions">
         <div class="tb-group">
           <button class="btn icon" data-act="resume" title="Resume — Space" disabled>
             <svg viewBox="0 0 24 24" class="ico"><path d="M7 4l13 8-13 8z" fill="currentColor" stroke="none"/></svg>
@@ -140,10 +165,11 @@
       </div>
 
       <div class="table-wrap" id="table-wrap">
-        <table class="torrents" id="table">
+        <table class="torrents" id="table" aria-label="Torrents" aria-rowcount="0">
           <thead><tr id="head-row"></tr></thead>
           <tbody id="rows"></tbody>
         </table>
+        <div class="skeleton-wrap" id="skeleton" aria-hidden="true"></div>
         <div class="empty" id="empty" hidden>
           <div class="empty-mark" aria-hidden="true"></div>
           <h2>Nothing here yet</h2>
@@ -154,27 +180,29 @@
     </main>
 
     <!-- ══════════════════════ detail panel ══════════════════════ -->
-    <aside class="detail" id="detail" hidden>
+    <aside class="detail" id="detail" hidden aria-label="Torrent details">
+      <button class="detail-resize" id="detail-resize" aria-label="Resize details panel"
+              title="Drag to resize — double-click to reset"></button>
       <div class="detail-head">
         <div class="detail-title" id="detail-title">—</div>
         <button class="btn icon" id="btn-detail-close" title="Close">
           <svg viewBox="0 0 24 24" class="ico"><path d="M6 6l12 12M18 6L6 18"/></svg>
         </button>
       </div>
-      <div class="tabs" id="detail-tabs">
-        <button class="tab active" data-tab="general">General</button>
-        <button class="tab" data-tab="files">Files</button>
-        <button class="tab" data-tab="peers">Peers</button>
-        <button class="tab" data-tab="trackers">Trackers</button>
-        <button class="tab" data-tab="pieces">Pieces</button>
-        <button class="tab" data-tab="speed">Speed</button>
+      <div class="tabs" id="detail-tabs" role="tablist">
+        <button class="tab active" data-tab="general" role="tab" aria-selected="true">General</button>
+        <button class="tab" data-tab="files" role="tab" aria-selected="false">Files</button>
+        <button class="tab" data-tab="peers" role="tab" aria-selected="false">Peers</button>
+        <button class="tab" data-tab="trackers" role="tab" aria-selected="false">Trackers</button>
+        <button class="tab" data-tab="pieces" role="tab" aria-selected="false">Pieces</button>
+        <button class="tab" data-tab="speed" role="tab" aria-selected="false">Speed</button>
       </div>
-      <div class="detail-body" id="detail-body"></div>
+      <div class="detail-body" id="detail-body" role="tabpanel" tabindex="0"></div>
     </aside>
   </div>
 
   <!-- ══════════════════════ status bar ══════════════════════ -->
-  <footer class="statusbar">
+  <footer class="statusbar" role="contentinfo">
     <span class="conn" id="conn"><i></i><span>Connecting…</span></span>
     <span class="sep"></span>
     <span id="stat-counts">—</span>
