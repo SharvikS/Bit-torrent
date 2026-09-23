@@ -4,7 +4,7 @@
 
 ### Splitting files at ridiculous speed.
 
-**A fast, modern BitTorrent client with a real-time web UI.**
+**A fast, modern BitTorrent client with a real-time web UI.**<br>
 Industrial-strength C++ engine. Zero-build frontend. No npm. No Electron. No nonsense.
 
 <br>
@@ -41,7 +41,7 @@ The daemon pushes state over a WebSocket once a second. The UI never polls. Noth
 
 Not aspirations. Actual numbers from the test runs that shipped this code:
 
-| | |
+| Measured | Result |
 |---|---|
 | 🚀 **Single torrent** | 276 MB pulled at **7.9 MB/s**, complete → seeding, no babysitting |
 | 🔥 **Concurrent** | 5 torrents, **10.7 MB/s** combined, 52 peers, 416 DHT nodes |
@@ -182,7 +182,7 @@ fission --open
 
 Built for people who'd rather not touch the mouse.
 
-| | | | |
+| Key | Does | Key | Does |
 |---|---|---|---|
 | `⌘K` | Command palette | `Space` | Pause / resume |
 | `N` | Add torrent | `Del` | Remove |
