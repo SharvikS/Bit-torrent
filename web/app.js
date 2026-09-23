@@ -1042,8 +1042,10 @@ function drawChart(canvas, down, up, peakLabel) {
 
   const css = getComputedStyle(document.documentElement);
   const grid = css.getPropertyValue('--border').trim();
-  const peak = Math.max(1, ...down, ...up);
-  if (peakLabel) peakLabel.textContent = `Peak ${F.bytes(peak)}/s`;
+  const observed = Math.max(0, ...down, ...up);
+  const peak = Math.max(1, observed);
+  // "Peak 1 B/s" is a confusing way to say a torrent has never transferred.
+  if (peakLabel) peakLabel.textContent = observed ? `Peak ${F.bytes(observed)}/s` : 'No traffic yet';
 
   ctx.strokeStyle = grid;
   ctx.lineWidth = 1;
