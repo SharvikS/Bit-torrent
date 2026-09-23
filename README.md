@@ -84,8 +84,8 @@ Not aspirations. Actual numbers from the test runs that shipped this code:
 - Live WebSocket push
 - Command palette `⌘K`
 - Piece map + speed charts
-- Dark / light, 6 accents
-- Drag-drop, paste-magnet
+- **8 themes**, 7 accents
+- 3 density levels
 - Works at phone width
 
 </td></tr>
@@ -104,7 +104,7 @@ Not aspirations. Actual numbers from the test runs that shipped this code:
 </div>
 
 <details>
-<summary><b>🎨 More screenshots</b> — light theme, command palette, piece map, files, settings, mobile</summary>
+<summary><b>🎨 More screenshots</b> — light theme, command palette, piece map, files, settings, loading, mobile</summary>
 
 <br>
 <div align="center">
@@ -129,12 +129,58 @@ Not aspirations. Actual numbers from the test runs that shipped this code:
 
 ![Settings](docs/settings.png)
 
+**Loading** — skeleton rows, shown only when data is genuinely late
+
+![Loading](docs/loading.png)
+
 **Phone width** — the whole thing, responsive
 
 <img src="docs/mobile.png" width="380" alt="Mobile">
 
 </div>
 </details>
+
+<br>
+
+## 🎨 Make it yours
+
+Appearance is **three independent axes**, each switchable instantly — no reload,
+no flash of the wrong colours:
+
+<div align="center">
+
+![Themes](docs/themes.png)
+
+<sub>Midnight · Graphite · Carbon · Nord · Dracula · Paper · Sandstone · Contrast</sub>
+
+</div>
+
+| Axis | Options |
+|---|---|
+| **Theme** | `System` follows your OS · five dark · two light · one WCAG-AAA `Contrast` |
+| **Accent** | Violet, blue, teal, green, amber, rose, cyan — independent of the theme |
+| **Density** | `Compact` / `Cozy` / `Comfortable` — drives row height *and* the type scale |
+| **Motion** | `Match system` / `Full` / `Reduced` — honours `prefers-reduced-motion` |
+
+Hit the theme button in the toolbar for a quick switch, or open **Settings →
+Appearance** for the full picker with live preview and revert-on-cancel.
+
+<div align="center">
+
+![Appearance settings](docs/appearance.png)
+
+</div>
+
+Under the hood every colour, size, duration and type step is a CSS custom
+property in `theme.css`. A component rule never names a colour — which is why a
+new theme is a 25-line block rather than an audit of the whole stylesheet.
+
+**Motion earns its place.** Rows animate when *you* re-sort or filter, never on
+the once-a-second refresh — otherwise the table would be permanently in motion.
+The loading skeleton only appears if data is genuinely late (160 ms), because a
+placeholder that flashes for one frame reads as a glitch, not as feedback. Set
+Motion to `Reduced` and every duration collapses to ~0 while the layout stays
+byte-identical.
 
 <br>
 
@@ -192,7 +238,8 @@ Built for people who'd rather not touch the mouse.
 | `,` | Settings | `?` | Show all shortcuts |
 
 **Paste a magnet link anywhere** and the add dialog opens, pre-filled. Drop a `.torrent` file
-anywhere on the window and it just starts.
+anywhere on the window and it just starts. Drag the details panel's edge to resize it —
+double-click the handle to snap it back.
 
 <br>
 
@@ -234,7 +281,8 @@ fission/
   api.py        routes, WebSocket hub, auth + request guards
 web/
   app.js        state, table, detail panel, dialogs, shortcuts
-  app.css       design system
+  theme.css     design tokens — themes, density, motion, type scale
+  app.css       components
   net.js        self-healing WebSocket
   ui.js         toasts, modals, context menus
   format.js     bytes, rates, durations
