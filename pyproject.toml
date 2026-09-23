@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fission-torrent"
+version = "1.0.0"
+description = "A fast, modern BitTorrent client with a real-time web UI, built on libtorrent."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+keywords = ["bittorrent", "torrent", "libtorrent", "p2p", "web-ui"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Web Environment",
+  "Intended Audience :: End Users/Desktop",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Communications :: File Sharing",
+]
+
+# libtorrent is a compiled extension and is usually best installed from your
+# distribution's package manager; it is listed here for the pip path.
+dependencies = ["aiohttp>=3.9", "libtorrent>=2.0"]
+
+[project.scripts]
+fission = "fission.__main__:main"
+
+[tool.setuptools]
+packages = ["fission"]
+
+[tool.setuptools.package-data]
+fission = []

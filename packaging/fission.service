@@ -1,0 +1,40 @@
+# Run Fission as a user service:
+#
+#   mkdir -p ~/.config/systemd/user
+#   cp packaging/fission.service ~/.config/systemd/user/
+#   # edit WorkingDirectory below to point at your checkout
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now fission
+#
+# To keep it running when you are not logged in:  loginctl enable-linger $USER
+[Unit]
+Description=Fission BitTorrent client
+Documentation=https://github.com/SharvikS/Bit-torrent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Projects/Bit-torrent
+ExecStart=/usr/bin/python3 -m fission --host 127.0.0.1 --port 8080
+Restart=on-failure
+RestartSec=5
+
+# Give the daemon time to announce "stopping" to trackers and flush resume
+# data; killing it early means a hash recheck on the next start.
+TimeoutStopSec=30
+KillSignal=SIGTERM
+
+# Hardening. Fission only needs to read its code and write its state and
+# download directories.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/.local/share/fission %h/Downloads
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=default.target
