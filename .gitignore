@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.state/
+downloads/
+*.fastresume
+*.torrent
+.DS_Store
+node_modules/
