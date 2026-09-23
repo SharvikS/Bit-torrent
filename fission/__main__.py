@@ -102,6 +102,11 @@ async def run(args: argparse.Namespace) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    # Without this, redirecting output (a systemd unit, nohup, a pipe) buffers
+    # the banner and shutdown notices until the process exits.
+    for stream in (sys.stdout, sys.stderr):
+        with contextlib.suppress(AttributeError, ValueError):
+            stream.reconfigure(line_buffering=True)
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
         format="%(asctime)s  %(levelname)-7s %(name)s  %(message)s",

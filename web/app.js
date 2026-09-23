@@ -407,7 +407,10 @@ function renderSidebar() {
   $('#free-space').textContent = F.bytes(state.stats.free_space || 0);
   const path = state.stats.download_dir || '';
   const pathEl = $('#dl-path');
-  pathEl.textContent = path;
+  // The element is `direction: rtl` so long paths truncate from the left,
+  // keeping the filename visible. That reorders leading neutral characters,
+  // so "/home/..." renders as "home/.../". A LEFT-TO-RIGHT MARK anchors it.
+  pathEl.textContent = path ? `\u200e${path}` : '';
   pathEl.title = path;
 }
 
